@@ -203,4 +203,12 @@ main(int argc, char *argv[]) {
     printf("total disk reads:     %d\n", disk_reads);
     printf("total disk writes:    %d\n", disk_writes);
     printf("page fault rate:      %.4f\n", (float)disk_reads / no_events);
+
+    /* cleanup */
+    free(frame_page);
+    free(frame_dirty);
+    free(frame_ref);
+    free(frame_last);
+    fclose(trace);
+    return 0;
 }
