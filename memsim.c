@@ -29,8 +29,8 @@
 typedef unsigned long long ull;
 
 typedef struct {
-  int pageNo;
-  int modified;
+    int pageNo;
+    int modified;
 } page;
 
 enum repl { RANDOM, FIFO, LRU, CLOCK };
@@ -80,13 +80,86 @@ int allocateFrame(int page_number) {
     return -1;
 }
 
-/* Selects a victim for eviction/discard according to the replacement algorithm,
- * returns chosen frame_no  */
+/* Helper functions for selectVictim */
+static int choose_random_victim(void) {
+    return rand() % numFrames;
+}
+
+static int choose_fifo_victim(void) {
+    int victim = fifo_hand;
+    fifo_hand = (fifo_hand + 1) % numFrames;
+    return victim;
+}
+
+static int choose_lru_victim(void) {
+    ull best = ULLONG_MAX;
+    int victim = 0;
+    for (int i = 0; i < numFrames; i++) {
+        if (frame_last[i] < best) {
+            best = frame_last[i];
+            victim = i;
+        }
+    }
+    return victim;
+}
+
+static int choose_clock_victim(void) {
+    while (1) {
+        if (frame_ref[clock_hand] == 0) {
+            int victim = clock_hand;
+            clock_hand = (clock_hand + 1) % numFrames;
+            return victim;
+        }
+        /* gives second chance */
+        frame_ref[clock_hand] = 0;
+        clock_hand = (clock_hand + 1) % numFrames;
+    }
+}
+
+/* Evict frame f (collect victim info), then load new page into same frame.
+   Returns the evicted page info so caller can count disk writes if modified. */
 page selectVictim(int page_number, enum repl mode) {
     page victim;
-    // to do
-    victim.pageNo = 0;
-    victim.modified = 0;
+    
+    /* Choose victim frame*/
+    int f = 0;
+    switch (mode) {
+        case RANDOM:
+            f = choose_random_victim();
+            break;
+        case FIFO:
+            f = choose_fifo_victim();
+            break;
+        case LRU:
+            f = choose_lru_victim();
+            break;
+        case CLOCK:
+            f = choose_clock_victim();
+            break;
+        default:
+            f = 0;
+            break;
+    }
+
+    /* Record the victim page information */
+    victim.pageNo = frame_page[f];
+    victim.modified = frame_dirty[f];
+
+    /* Evict from frame f */
+    if (debugmode) {
+        if (victim.modified) {
+            printf("evict (DIRTY) %8d from frame %d\n", victim.pageNo, f);
+        } else {
+            printf("evict (CLEAN) %8d from frame %d\n", victim.pageNo, f);
+        }
+    }
+
+    /* Install new page */
+    frame_page[f]  = page_number;
+    frame_dirty[f] = 0;       /* new page starts clean */
+    frame_ref[f]   = 1;       /* referenced upon load */
+    frame_last[f]  = ++tnow;  /* most recently used now */
+
     return (victim);
 }
 
