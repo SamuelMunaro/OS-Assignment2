@@ -33,7 +33,7 @@ typedef struct {
   int modified;
 } page;
 
-enum repl { random, fifo, lru, clock };
+enum repl { RANDOM, FIFO, LRU, CLOCK };
 
 int createMMU(int);
 int checkInMemory(int);
@@ -72,7 +72,7 @@ int checkInMemory(int page_number) {
 /* allocate page to the next free frame and record where it put it */
 int allocateFrame(int page_number) {
     // to do
-    return;
+    return -1;
 }
 
 /* Selects a victim for eviction/discard according to the replacement algorithm,
@@ -85,7 +85,7 @@ page selectVictim(int page_number, enum repl mode) {
     return (victim);
 }
 
-main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     char *tracename;
     int page_number, frame_no, done;
     int do_line, i;
@@ -120,13 +120,13 @@ main(int argc, char *argv[]) {
         }
 
         if (strcmp(argv[3], "lru\0") == 0) {
-            replace = lru;
+            replace = LRU;
         } else if (strcmp(argv[3], "rand\0") == 0) {
-            replace = random;
+            replace = RANDOM;
         } else if (strcmp(argv[3], "clock\0") == 0) {
-            replace = clock;
+            replace = CLOCK;
         } else if (strcmp(argv[3], "fifo\0") == 0) {
-            replace = fifo;
+            replace = FIFO;
         } else {
             printf("Replacement algorithm must be rand/fifo/lru/clock  \n");
             exit(-1);
