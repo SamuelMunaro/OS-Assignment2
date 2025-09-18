@@ -165,24 +165,24 @@ int main(int argc, char *argv[]) {
         frame_no = checkInMemory(page_number); /* ask for physical address */
 
         if (frame_no == -1) {
-            disk_reads++; /* Page fault, need to load it into memory */
-        } 
-        if (debugmode) {
-            printf("Page fault %8d \n", page_number);
-        }
-        if (allocated < numFrames) {/* allocate it to an empty frame */
-            frame_no = allocateFrame(page_number);
-            allocated++;
-        } else {
-            Pvictim = selectVictim(page_number,replace); /* returns page number of the victim */
-            frame_no = checkInMemory(page_number);     /* find out the frame the new page is in */
-            if (Pvictim.modified) {/* need to know victim page and modified  */
-                disk_writes++;
-            }
+            disk_reads++; /* Page fault, need to load it into memory */ 
             if (debugmode) {
-                printf("Disk write %8d \n", Pvictim.pageNo);
-            } else if (debugmode) {
-                printf("Discard    %8d \n", Pvictim.pageNo);
+                printf("Page fault %8d \n", page_number);
+            }
+            if (allocated < numFrames) {/* allocate it to an empty frame */
+                frame_no = allocateFrame(page_number);
+                allocated++;
+            } else {
+                Pvictim = selectVictim(page_number,replace); /* returns page number of the victim */
+                frame_no = checkInMemory(page_number);     /* find out the frame the new page is in */
+                if (Pvictim.modified) {/* need to know victim page and modified  */
+                    disk_writes++;
+                }
+                if (debugmode) {
+                    printf("Disk write %8d \n", Pvictim.pageNo);
+                } else if (debugmode) {
+                    printf("Discard    %8d \n", Pvictim.pageNo);
+                }
             }
         }
     }
