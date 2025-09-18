@@ -64,9 +64,14 @@ int createMMU(int frames) {
 
 /* Checks for residency: returns frame no or -1 if not found */
 int checkInMemory(int page_number) {
-    int result = -1;
-    // to do
-    return result;
+    for (int i = 0; i < numFrames; i++) {
+        if (frame_page[i] == page_number) {
+            frame_last[i] == ++tnow;
+            frame_ref[i] == 1;
+            return i;
+        }
+    }
+    return -1;      
 }
 
 /* allocate page to the next free frame and record where it put it */
