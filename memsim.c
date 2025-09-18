@@ -23,9 +23,10 @@
  *   hex_address R|W
  *   0041f7a0 R
  *   31348900 W
- * -------------------------------------------------------------- */
+** -------------------------------------------------------------- */
 
 #define PAGE_OFFSET 12 /* 4KB */
+typedef unsigned long long ull;
 
 typedef struct {
   int pageNo;
@@ -43,6 +44,17 @@ int numFrames;
 
 /* ----------------- Internal MMU State ------------------- */
 /* One slot per frame */
+static int *frame_page = NULL;          /* -1 if free, else resident page number */
+static char *frame_dirty = NULL;        /* 0/1 dirty bit */
+static char *frame_ref = NULL;          /* reference bit (for CLOCK) */
+static ull *frame_last = NULL;          /* last-used timestamp (for LRU) */
+
+static int next_free_idx = 0;           /* where to place next free frame */
+static int clock_hand = 0;              /* pointer for CLOCK */
+static int fifo_hand = 0;               /* next victim for FIFO */
+static ull tnow = 0ULL;                 /* global timestamp for LRU updates */
+
+static int debugmode = 0;               /* read from argv[4] in main() */
 
 /* Creates the page table structure to record memory allocation */
 int createMMU(int frames) {
@@ -144,7 +156,7 @@ main(int argc, char *argv[]) {
     do_line = fscanf(trace, "%x %c", &address, &rw);
 
     while (do_line == 2) {
-        page_number = address >> pageoffset;
+        page_number = address >> PAGE_OFFSET;
         frame_no = checkInMemory(page_number); /* ask for physical address */
 
         if (frame_no == -1) {
